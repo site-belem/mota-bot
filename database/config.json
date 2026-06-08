@@ -1,0 +1,25 @@
+{
+  "prefixes": [
+    "+",
+    "-",
+    ".",
+    "×",
+    "!",
+    "/",
+    "#",
+    "$"
+  ],
+  "autoSticker": true,
+  "ownerName": "Mota",
+  "ownerNumber": "189846798762188",
+  "welcomeMsg": "Seja bem-vindo(a) ao grupo!",
+  "welcomeEnabled": {
+    "120363427393695686@g.us": true
+  },
+  "mutedUsers": {
+    "120363427393695686@g.us": []
+  },
+  "stickerPack": "mota",
+  "stickerAuthor": "",
+  "botOn": true
+}

@@ -1,0 +1,21 @@
+{
+  "name": "mota-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Bot for Termux using Baileys",
+  "main": "bot.js",
+  "scripts": {
+    "start": "bash start.sh",
+    "qr": "node qr.js",
+    "numero": "node numero.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc13",
+    "axios": "^1.17.0",
+    "node-webpmux": "^3.2.1",
+    "pino": "^8.19.0",
+    "qrcode-terminal": "^0.12.0",
+    "readline": "^1.3.0"
+  },
+  "author": "Manus AI",
+  "license": "MIT"
+}

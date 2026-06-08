@@ -1,0 +1,416 @@
+const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
+const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
+
+// Importando módulos internos da pasta src
+const { config, loadConfig, saveConfig } = require('./src/config');
+const { addMetadata } = require('./src/utils');
+const handleWelcome = require('./src/welcome');
+const { ttt_games, handleTTT } = require('./src/games');
+const sendMenu = require('./src/menu');
+
+// Caminhos organizados
+const databasePath = path.join(__dirname, 'database');
+const scriptsPath = path.join(__dirname, 'scripts');
+const assetsPath = path.join(__dirname, 'assets');
+
+// Carregar informações dos comandos da pasta database
+const infoPath = path.join(databasePath, 'commands_info.json');
+let commandsInfo = {};
+if (fs.existsSync(infoPath)) {
+    try { commandsInfo = JSON.parse(fs.readFileSync(infoPath, 'utf-8')); } catch (e) { commandsInfo = {}; }
+}
+
+module.exports = (sock) => {
+    // Evento de Boas-Vindas
+    sock.ev.on('group-participants.update', async (anu) => {
+        await handleWelcome(sock, anu);
+    });
+
+    sock.ev.on('messages.upsert', async (m) => {
+        try {
+            const msg = m.messages[0];
+            if (!msg.message || msg.key.fromMe) return;
+
+            const from = msg.key.remoteJid;
+            const isGroup = from.endsWith('@g.us');
+            const sender = msg.key.participant || msg.key.remoteJid;
+            const pushName = msg.pushName || "Usuário";
+            const type = Object.keys(msg.message)[0];
+            let text = msg.message.extendedTextMessage?.text || msg.message.conversation || msg.message.imageMessage?.caption || msg.message.videoMessage?.caption || "";
+
+            loadConfig();
+            
+            // Verificação de dono aprimorada (checa o ID e o número formatado)
+            const ownerID = config.ownerNumber.includes('@') ? config.ownerNumber : config.ownerNumber + '@s.whatsapp.net';
+            const isOwner = (sender === ownerID) || (sender.split('@')[0] === config.ownerNumber);
+
+            const prefix = config.prefixes.find(p => text.startsWith(p));
+            const isCommand = prefix !== undefined;
+            const command = isCommand ? text.slice(prefix.length).trim().split(' ')[0].toLowerCase() : null;
+            const args = isCommand ? text.slice(prefix.length).trim().split(' ').slice(1) : [];
+
+            // --- LÓGICA BOT ON/OFF (BLOQUEIO REAL E IMEDIATO) ---
+            if (isCommand) {
+                if (!config.botOn && !isOwner) {
+                    console.log(`[BLOQUEADO] Comando ${command} ignorado de ${sender} (Bot OFF)`);
+                    return; 
+                }
+            }
+
+            // --- RESPOSTA DE PREFIXOS ---
+            const lowerText = text.toLowerCase().trim();
+            if (lowerText === 'prefixo' || lowerText === 'prefixos' || config.prefixes.some(p => lowerText === p + 'prefixo' || lowerText === p + 'prefixos')) {
+                return await sock.sendMessage(from, { text: `✨ *𝐌𝐞𝐮𝐬 𝐏𝐫𝐞𝐟𝐢𝐱𝐨𝐬:* ✨\n\n${config.prefixes.join('  ')}` });
+            }
+
+            // --- SISTEMA DE MUTE ---
+            if (isGroup && config.mutedUsers[from] && config.mutedUsers[from].includes(sender)) {
+                await sock.sendMessage(from, { delete: msg.key });
+                return;
+            }
+
+            // --- LÓGICA JOGO DA VELHA ---
+            if (isGroup && await handleTTT(sock, from, sender, text)) return;
+
+            const react = async () => {
+                const emojis = ['🖋️', '🖤'];
+                const selected = emojis[Math.floor(Math.random() * emojis.length)];
+                await sock.sendMessage(from, { react: { text: selected, key: msg.key } });
+            };
+
+            const sendSticker = async (inputBuffer, isVideo = false, isCut = false) => {
+                const tempIn = path.join(__dirname, `stk_in_${Date.now()}${isVideo ? '.mp4' : '.jpg'}`);
+                const tempOut = path.join(__dirname, `stk_out_${Date.now()}.webp`);
+                fs.writeFileSync(tempIn, inputBuffer);
+                const vf = isCut ? 'scale=512:512:force_original_aspect_ratio=increase,crop=512:512' : 'scale=512:512';
+                const ffmpegCmd = isVideo 
+                    ? `ffmpeg -i ${tempIn} -vf "${vf},fps=12" -vcodec libwebp -lossless 0 -compression_level 6 -q:v 40 -loop 0 -preset picture -an -vsync 0 ${tempOut}`
+                    : `ffmpeg -i ${tempIn} -vf "${vf}" -vcodec libwebp -lossless 1 -loop 0 -preset default -an -vsync 0 ${tempOut}`;
+                exec(ffmpegCmd, async (err) => {
+                    if (!err && fs.existsSync(tempOut)) {
+                        await sock.sendMessage(from, { sticker: await addMetadata(fs.readFileSync(tempOut), config.stickerPack, config.stickerAuthor) });
+                    }
+                    if (fs.existsSync(tempIn)) fs.unlinkSync(tempIn);
+                    if (fs.existsSync(tempOut)) fs.unlinkSync(tempOut);
+                });
+            };
+
+            if (isCommand) {
+                const groupMetadata = isGroup ? await sock.groupMetadata(from) : null;
+                const participants = isGroup ? groupMetadata.participants : [];
+                const isAdmin = isGroup ? participants.find(p => p.id === sender)?.admin : false;
+
+                if (command === 'menu' || command === 'start' || command === 'cmd') {
+                    await react();
+                    await sendMenu(sock, from, pushName, prefix);
+                }
+
+                else if (command === 'boton' || command === 'botoff') {
+                    if (!isOwner) return;
+                    config.botOn = (command === 'boton');
+                    saveConfig();
+                    await sock.sendMessage(from, { text: `✅ O bot agora está ${config.botOn ? '*ATIVADO*' : '*DESATIVADO*'} para todos os usuários!` });
+                }
+
+                else if (command === 'all') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    const message = args.join(' ');
+                    const msgTag = message || "Chamada geral!";
+                    const mentions = groupMetadata.participants.map(p => p.id);
+                    await sock.sendMessage(from, { text: `📢 *${msgTag}*`, mentions: mentions });
+                }
+
+                else if (command === 'limpar') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    try {
+                        const count = parseInt(args[0]) || 20;
+                        if (sock.store && sock.store.messages[from]) {
+                            const messages = sock.store.messages[from].array.slice(-count);
+                            for (let m of messages) {
+                                await sock.sendMessage(from, { delete: m.key }).catch(() => {});
+                            }
+                        } else {
+                            await sock.chatModify({ delete: true, lastMessages: [{ key: msg.key, messageTimestamp: msg.messageTimestamp }] }, from).catch(() => {});
+                        }
+                    } catch (e) {
+                        await sock.chatModify({ delete: true, lastMessages: [{ key: msg.key, messageTimestamp: msg.messageTimestamp }] }, from).catch(() => {});
+                    }
+                }
+
+                else if (command === 'infocmd') {
+                    await react();
+                    const cmd = args[0]?.toLowerCase();
+                    if (!cmd) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}infocmd [comando]\n\nExemplo: ${prefix}infocmd play` });
+                    const info = commandsInfo[cmd];
+                    if (info) {
+                        await sock.sendMessage(from, { text: `ℹ️ *𝐈𝐧𝐟𝐨𝐫𝐦𝐚𝐜̧𝐨̃𝐞𝐬: ${prefix}${cmd}*\n\n${info}` });
+                    } else {
+                        await sock.sendMessage(from, { text: "❌ Comando não encontrado na base de dados." });
+                    }
+                }
+
+                else if (command === 'rename') {
+                    await react();
+                    const input = args.join(' ');
+                    if (!input.includes('|')) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}rename Pack | Autor\n\n*Nota:* Responda a uma figurinha para renomeá-la na hora!` });
+                    
+                    const [pack, author] = input.split('|');
+                    const newPack = pack.trim();
+                    const newAuthor = author.trim();
+                    
+                    const isQuotedSticker = type === 'extendedTextMessage' && msg.message.extendedTextMessage.contextInfo.quotedMessage?.stickerMessage;
+                    if (isQuotedSticker) {
+                        const stickerMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage;
+                        const stream = await downloadContentFromMessage(stickerMsg, 'sticker');
+                        let buffer = Buffer.from([]);
+                        for await (const chunk of stream) { buffer = Buffer.concat([buffer, chunk]); }
+                        await sock.sendMessage(from, { sticker: await addMetadata(buffer, newPack, newAuthor) });
+                    } else {
+                        if (!isOwner) return;
+                        config.stickerPack = newPack;
+                        config.stickerAuthor = newAuthor;
+                        saveConfig();
+                        await sock.sendMessage(from, { text: `✅ Metadados globais alterados!\n📦 *Pack:* ${config.stickerPack}\n👤 *Autor:* ${config.stickerAuthor}` });
+                    }
+                }
+
+                else if (command === 'seradm' || command === 'tiraradm') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    let target = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+                    if (!target) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* Marque alguém com ${prefix}${command}` });
+                    const name = target.split('@')[0];
+                    await sock.groupParticipantsUpdate(from, [target], command === 'seradm' ? 'promote' : 'demote').then(() => {
+                        sock.sendMessage(from, { text: `@${name} ${command === 'seradm' ? 'promovido(a) a adm' : 'rebaixado(a)'}`, mentions: [target] });
+                    }).catch(() => {});
+                }
+
+                else if (command === 'att') {
+                    await react();
+                    const isQuotedSticker = type === 'extendedTextMessage' && msg.message.extendedTextMessage.contextInfo.quotedMessage?.stickerMessage;
+                    if (!isQuotedSticker) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* Responda a uma figurinha com ${prefix}att para transformá-la em imagem ou vídeo.` });
+                    
+                    const stickerMsg = msg.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage;
+                    const stream = await downloadContentFromMessage(stickerMsg, 'sticker');
+                    let buffer = Buffer.from([]);
+                    for await (const chunk of stream) { buffer = Buffer.concat([buffer, chunk]); }
+                    
+                    const tempStk = path.join(__dirname, `temp_att_${Date.now()}.webp`);
+                    const tempOut = path.join(__dirname, `temp_att_${Date.now()}.${stickerMsg.isAnimated ? 'mp4' : 'jpg'}`);
+                    fs.writeFileSync(tempStk, buffer);
+                    
+                    const ffmpegCmd = stickerMsg.isAnimated 
+                        ? `ffmpeg -i ${tempStk} -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" -vcodec libx264 -pix_fmt yuv420p -loop 0 ${tempOut}`
+                        : `ffmpeg -i ${tempStk} ${tempOut}`;
+                        
+                    exec(ffmpegCmd, async (err) => {
+                        if (!err && fs.existsSync(tempOut)) {
+                            const media = stickerMsg.isAnimated ? { video: fs.readFileSync(tempOut) } : { image: fs.readFileSync(tempOut) };
+                            await sock.sendMessage(from, media);
+                        }
+                        if (fs.existsSync(tempStk)) fs.unlinkSync(tempStk);
+                        if (fs.existsSync(tempOut)) fs.unlinkSync(tempOut);
+                    });
+                }
+
+                else if (command === 'tst') {
+                    await react();
+                    const txt = args.join(' '); 
+                    if (!txt) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}tst [texto]\n\nExemplo: ${prefix}tst Olá tudo bem?` });
+                    const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(txt)}&tl=pt&client=tw-ob`;
+                    const tempAudio = path.join(__dirname, `tts_${Date.now()}.mp3`);
+                    const tempOgg = path.join(__dirname, `tts_${Date.now()}.opus`);
+                    
+                    try {
+                        const response = await axios({ method: 'get', url: url, responseType: 'stream' });
+                        const writer = fs.createWriteStream(tempAudio);
+                        response.data.pipe(writer);
+                        writer.on('finish', () => {
+                            exec(`ffmpeg -i ${tempAudio} -c:a libopus -b:a 128k ${tempOgg}`, async (err) => {
+                                if (!err && fs.existsSync(tempOgg)) {
+                                    await sock.sendMessage(from, { audio: fs.readFileSync(tempOgg), mimetype: 'audio/ogg; codecs=opus', ptt: true });
+                                }
+                                if (fs.existsSync(tempAudio)) fs.unlinkSync(tempAudio);
+                                if (fs.existsSync(tempOgg)) fs.unlinkSync(tempOgg);
+                            });
+                        });
+                    } catch (e) { console.log(e); }
+                }
+
+                else if (command === 'addprefixo' || command === 'remprefixo') {
+                    await react();
+                    if (!isOwner) return;
+                    const newPrefix = args[0];
+                    if (!newPrefix) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}${command} [símbolo]\n\nExemplo: ${prefix}addprefixo %` });
+                    if (command === 'addprefixo') {
+                        if (!config.prefixes.includes(newPrefix)) config.prefixes.push(newPrefix);
+                    } else {
+                        config.prefixes = config.prefixes.filter(p => p !== newPrefix);
+                    }
+                    saveConfig();
+                    await sock.sendMessage(from, { text: `✅ Prefixo ${command === 'addprefixo' ? 'adicionado' : 'removido'}!` });
+                }
+
+                else if (command === 'add') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    let num = args[0]?.replace(/\D/g, '');
+                    if (!num) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}add [número]\n\nExemplo: ${prefix}add 559199999999` });
+                    const jid = num + '@s.whatsapp.net';
+                    await sock.groupParticipantsUpdate(from, [jid], 'add').catch(() => {});
+                }
+
+                else if (command === 'ban') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    let target = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || (args[0] ? args[0].replace(/\D/g, '') + '@s.whatsapp.net' : null);
+                    if (!target) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}ban [marque alguém ou digite o número]` });
+                    await sock.groupParticipantsUpdate(from, [target], 'remove').catch(() => {});
+                }
+
+                else if (command === 'mute' || command === 'unmute') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    const target = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+                    if (!target) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* Marque alguém com ${prefix}${command}` });
+                    if (!config.mutedUsers[from]) config.mutedUsers[from] = [];
+                    if (command === 'mute') {
+                        if (!config.mutedUsers[from].includes(target)) config.mutedUsers[from].push(target);
+                    } else {
+                        config.mutedUsers[from] = config.mutedUsers[from].filter(u => u !== target);
+                    }
+                    saveConfig();
+                    await sock.sendMessage(from, { text: `✅ Usuário ${command === 'mute' ? 'mutado' : 'desmutado'}!` });
+                }
+
+                else if (command === 'fechargp' || command === 'abrirgp') {
+                    await react();
+                    if (!isGroup || (!isAdmin && !isOwner)) return;
+                    await sock.groupSettingUpdate(from, command === 'fechargp' ? 'announcement' : 'not_announcement').catch(() => {});
+                }
+
+                else if (command === 's' || command === 'sticker' || command === 'sc') {
+                    await react();
+                    const isQuoted = type === 'extendedTextMessage';
+                    const msgType = isQuoted ? msg.message.extendedTextMessage.contextInfo.quotedMessage : msg.message;
+                    if (msgType && (msgType.imageMessage || msgType.videoMessage)) {
+                        const stream = await downloadContentFromMessage(msgType.imageMessage || msgType.videoMessage, msgType.imageMessage ? 'image' : 'video');
+                        let buffer = Buffer.from([]);
+                        for await (const chunk of stream) { buffer = Buffer.concat([buffer, chunk]); }
+                        await sendSticker(buffer, !!msgType.videoMessage, command === 'sc');
+                    } else {
+                        await sock.sendMessage(from, { text: `ℹ️ *Como usar:* Envie uma imagem/vídeo ou responda a uma mídia com ${prefix}${command}` });
+                    }
+                }
+
+                else if (command === 'cr' || command === 'cr2') {
+                    await react();
+                    const txt = args.join(' '); 
+                    if (!txt) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}${command} [texto]\n\nExemplo: ${prefix}${command} Mota` });
+                    const mode = command === 'cr2' ? 'rgb' : 'static';
+                    const tempOut = path.join(__dirname, `${command}_${Date.now()}.webp`);
+                    exec(`python3 scripts/sticker_maker.py "${txt}" "${tempOut}" "${mode}"`, async (err) => {
+                        if (!err && fs.existsSync(tempOut)) {
+                            await sock.sendMessage(from, { sticker: await addMetadata(fs.readFileSync(tempOut), config.stickerPack, config.stickerAuthor) });
+                            fs.unlinkSync(tempOut);
+                        }
+                    });
+                }
+
+                else if (command === 'play' || command === 'baixar') {
+                    await react();
+                    const query = args.join(' '); 
+                    if (!query) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}${command} [link ou nome]\n\nExemplo: ${prefix}${command} https://link-do-video.com` });
+                    
+                    await sock.sendMessage(from, { text: `⏳ Baixando mídia...` });
+                    const file = `file_${Date.now()}.${command === 'play' ? 'mp3' : 'mp4'}`;
+                    const format = command === 'play' ? 'bestaudio[ext=m4a]/bestaudio' : 'best[ext=mp4]/best';
+                    
+                    exec(`yt-dlp "${query}" -f "${format}" --no-check-certificate -o "${file}"`, async (err) => {
+                        if (err && !query.startsWith('http')) {
+                            exec(`yt-dlp "ytsearch:${query}" -f "${format}" --no-check-certificate -o "${file}"`, async (err2) => {
+                                if (!err2 && fs.existsSync(file)) {
+                                    const media = command === 'play' ? { audio: fs.readFileSync(file), mimetype: 'audio/mp4' } : { video: fs.readFileSync(file) };
+                                    await sock.sendMessage(from, media).then(() => { if (fs.existsSync(file)) fs.unlinkSync(file); });
+                                } else {
+                                    await sock.sendMessage(from, { text: "❌ Erro no download." });
+                                }
+                            });
+                        } else if (!err && fs.existsSync(file)) {
+                            const media = command === 'play' ? { audio: fs.readFileSync(file), mimetype: 'audio/mp4' } : { video: fs.readFileSync(file) };
+                            await sock.sendMessage(from, media).then(() => { if (fs.existsSync(file)) fs.unlinkSync(file); });
+                        } else {
+                            await sock.sendMessage(from, { text: "❌ Erro no download." });
+                        }
+                    });
+                }
+
+                else if (command === 'tr') {
+                    await react();
+                    const langMap = { 'inglês': 'en', 'espanhol': 'es', 'francês': 'fr', 'português': 'pt' };
+                    let lang = langMap[args[0]?.toLowerCase()] || args[0]?.toLowerCase();
+                    const txt = args.slice(1).join(' '); 
+                    if (!lang || !txt) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* ${prefix}tr [idioma] [texto]\n\nExemplo: ${prefix}tr inglês Olá` });
+                    try {
+                        const res = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${lang}&dt=t&q=${encodeURIComponent(txt)}`);
+                        await sock.sendMessage(from, { text: `🌍 *Traduzido:* ${res.data[0].map(x => x[0]).join('')}` });
+                    } catch (e) {}
+                }
+
+                else if (command === 'curiosidade') {
+                    await react();
+                    try {
+                        const res = await axios.get('https://uselessfacts.jsph.pl/random.json?language=en');
+                        const fact = res.data.text;
+                        const tr = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=${encodeURIComponent(fact)}`);
+                        await sock.sendMessage(from, { text: `🤔 *Você sabia?*\n\n${tr.data[0].map(x => x[0]).join('')}` });
+                    } catch (e) {}
+                }
+
+                else if (command === 'gado') {
+                    await react();
+                    let target = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0] || sender;
+                    const percent = Math.floor(Math.random() * 101);
+                    const name = target.split('@')[0];
+                    await sock.sendMessage(from, { text: `🐂 *𝐌𝐄𝐃𝐈𝐃𝐎𝐑 𝐃𝐄 𝐆𝐀𝐃𝐎*\n\nUsuário: @${name}\nNível: ${percent}%\n\n${percent > 70 ? "Vixi, esse aí já tem até o registro no pasto! 🤠" : "Ainda tem salvação! 😂"}`, mentions: [target] });
+                }
+
+                else if (command === 'casal') {
+                    await react();
+                    if (!isGroup) return;
+                    const members = participants.map(p => p.id);
+                    const c1 = members[Math.floor(Math.random() * members.length)];
+                    let c2 = members[Math.floor(Math.random() * members.length)];
+                    while (c1 === c2) { c2 = members[Math.floor(Math.random() * members.length)]; }
+                    await sock.sendMessage(from, { text: `❤️ *𝐂𝐀𝐒𝐀𝐋 𝐃𝐎 𝐃𝐈𝐀*\n\n@${c1.split('@')[0]} & @${c2.split('@')[0]}\n\nCombinam ou não? 😏`, mentions: [c1, c2] });
+                }
+
+                else if (command === 'velha' || command === 'jogodavelha') {
+                    await react();
+                    if (!isGroup) return;
+                    let target = msg.message.extendedTextMessage?.contextInfo?.mentionedJid?.[0];
+                    if (!target) return await sock.sendMessage(from, { text: `ℹ️ *Como usar:* Marque alguém para desafiar!\nExemplo: ${prefix}velha @user` });
+                    if (target === sender) return await sock.sendMessage(from, { text: "❌ Você não pode jogar contra você mesmo!" });
+                    
+                    ttt_games[from] = {
+                        playerX: sender,
+                        playerO: target,
+                        board: Array(9).fill(null),
+                        turn: 'X'
+                    };
+                    await sock.sendMessage(from, { text: `🎮 *𝐉𝐎𝐆𝐎 𝐃𝐀 𝐕𝐄𝐋𝐇𝐀* 🎮\n\n@${sender.split('@')[0]} (❌) VS @${target.split('@')[0]} (⭕)\n\n1️⃣2️⃣3️⃣\n4️⃣5️⃣6️⃣\n7️⃣8️⃣9️⃣\n\nTurno de: @${sender.split('@')[0]}\nDigite o número da casa para marcar!`, mentions: [sender, target] });
+                }
+
+                // --- COMANDO NÃO EXISTE ---
+                else {
+                    await sock.sendMessage(from, { text: `❌ *Comando inexistente!*\n\nConsulte meus comandos enviando *${config.prefixes[0]}menu*` });
+                }
+            }
+        } catch (err) { console.log('Erro:', err); }
+    });
+};
