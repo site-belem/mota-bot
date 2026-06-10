@@ -438,6 +438,10 @@ Exemplo: ${prefix}${command} https://link-do-video.com` });
                     }
                 }
 
+                // --- COMANDO NÃO EXISTE ---
+                else {
+                    await sock.sendMessage(from, { text: `❌ *Comando inexistente!*\n\nConsulte meus comandos enviando *${config.prefixes[0]}menu*` });
+                }
             }
         } catch (err) { console.log('Erro:', err); }
     });

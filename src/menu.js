@@ -17,6 +17,9 @@ module.exports = async (sock, from, pushName, prefix) => {
                      `🌍 *𝐈𝐍𝐓𝐄𝐑𝐍𝐄𝐓*\n` +
                      `┌ ♠️ *${prefix}play*\n` +
                      `├ ♠️ *${prefix}baixar*\n` +
+                     `├ ♠️ *${prefix}gpt*\n` +
+                     `├ ♠️ *${prefix}img*\n` +
+                     `├ ♠️ *${prefix}encurtar*\n` +
                      `├ ♠️ *${prefix}tr*\n` +
                      `├ ♠️ *${prefix}tst*\n` +
                      `└ ♠️ *${prefix}curiosidade*\n\n` +

@@ -1,13 +1,7 @@
 {
   "prefixes": [
     "+",
-    "-",
-    ".",
-    "×",
-    "!",
-    "/",
-    "#",
-    "$"
+    "."
   ],
   "autoSticker": true,
   "ownerName": "Mota",

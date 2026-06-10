@@ -1,4 +1,3 @@
-
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers, makeCacheableSignalKeyStore, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const pino = require('pino');
@@ -8,7 +7,6 @@ const path = require('path');
 async function connectToWhatsApp() {
     const { state, saveCreds } = await useMultiFileAuthState(path.resolve(__dirname, 'auth'));
     
-    // Busca a versão mais recente do WhatsApp Web automaticamente
     const { version } = await fetchLatestBaileysVersion();
     console.log(`Conectando com a versão do WhatsApp Web: v${version.join('.')}`);
 
@@ -19,7 +17,6 @@ async function connectToWhatsApp() {
             keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })),
         },
         logger: pino({ level: 'silent' }),
-        // Browser configurado como Chrome no Ubuntu (muito estável)
         browser: ["Ubuntu", "Chrome", "110.0.5481.178"],
         syncFullHistory: false,
     });
