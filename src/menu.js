@@ -14,6 +14,12 @@ module.exports = async (sock, from, pushName, prefix) => {
                      `├ ♠️ *${prefix}cr2*\n` +
                      `├ ♠️ *${prefix}rename*\n` +
                      `└ ♠️ *${prefix}att*\n\n` +
+                                          `💵 *𝐀𝐋𝐔𝐆𝐔𝐄𝐋*
+` +
+                     `┌ ♠️ *${prefix}aluguel*
+` +
+                     `└ ♠️ *${prefix}alugar*
+
                      `🌍 *𝐈𝐍𝐓𝐄𝐑𝐍𝐄𝐓*\n` +
                      `┌ ♠️ *${prefix}play*\n` +
                      `├ ♠️ *${prefix}baixar*\n` +
@@ -45,7 +51,16 @@ module.exports = async (sock, from, pushName, prefix) => {
                      `├ ♠️ *${prefix}botoff*\n` +
                      `├ ♠️ *${prefix}addprefixo*\n` +
                      `├ ♠️ *${prefix}remprefixo*\n` +
-                     `└ ♠️ *${prefix}infocmd*`;
+                     `└ ♠️ *${prefix}infocmd*`\n\n" +
+`👑 *𝐃𝐎𝐍𝐎*
+` +
+                     `┌ ♠️ *${prefix}addaluguel*
+` +
+                     `├ ♠️ *${prefix}addteste*
+` +
+                     `├ ♠️ *${prefix}remaluguel*
+` +
+                     `└ ♠️ *${prefix}i;
     
     const menuVideoPath = path.join(__dirname, '../assets/menu.mp4');
     if (fs.existsSync(menuVideoPath)) {
