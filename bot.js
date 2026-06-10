@@ -1,6 +1,13 @@
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
 const fs = require('fs');
+const rentalsPath = path.resolve(__dirname, 'database', 'rentals.json');
+const getRentals = () => {
+    try { return JSON.parse(fs.readFileSync(rentalsPath, 'utf-8')); }
+    catch { return {}; }
+};
+const saveRentals = (data) => fs.writeFileSync(rentalsPath, JSON.stringify(data, null, 2));
+
 const path = require('path');
 const axios = require('axios');
 
@@ -48,6 +55,20 @@ module.exports = (sock) => {
             const isCommand = prefix !== undefined;
             const command = isCommand ? text.slice(prefix.length).trim().split(' ')[0].toLowerCase() : null;
             const args = isCommand ? text.slice(prefix.length).trim().split(' ').slice(1) : [];
+            // --- SISTEMA DE LICENÇA E ALUGUEL ---
+            const rentals = getRentals();
+            const groupID = from;
+            const isAuthorized = rentals[groupID] && (rentals[groupID].expiry > Date.now() || rentals[groupID].expiry === -1);
+
+            if (isCommand && !isOwner) {
+                if (!isGroup && !isAuthorized) {
+                    return await sock.sendMessage(from, { text: '❌ *Acesso Negado!*\n\nEste bot só funciona em grupos autorizados ou para usuários com licença ativa no PV.\n\nFale com o dono para alugar: wa.me/559184886473' });
+                }
+                if (isGroup && !isAuthorized) {
+                    return await sock.sendMessage(from, { text: '⚠️ *GRUPO NÃO AUTORIZADO!*\n\nO período de uso ou teste deste bot neste grupo expirou ou não foi ativado.\n\nEntre em contato com o dono para renovar ou pedir um teste: wa.me/559184886473' });
+                }
+            }
+
 
             // --- LÓGICA BOT ON/OFF (BLOQUEIO REAL E IMEDIATO) ---
             if (isCommand) {
@@ -77,6 +98,33 @@ module.exports = (sock) => {
                 const selected = emojis[Math.floor(Math.random() * emojis.length)];
                 await sock.sendMessage(from, { react: { text: selected, key: msg.key } });
             };
+            
+            // --- COMANDOS ADMINISTRATIVOS DE ALUGUEL (APENAS DONO) ---
+            if (isOwner) {
+                if (command === 'addaluguel' || command === 'addteste') {
+                    const target = args[0] === 'aqui' ? from : args[0];
+                    if (!target) return await sock.sendMessage(from, { text: "❌ Informe o ID ou use 'aqui'" });
+                    const days = command === 'addteste' ? 1 : parseInt(args[1]);
+                    if (isNaN(days) && command === 'addaluguel') return await sock.sendMessage(from, { text: "❌ Use: .addaluguel [ID/aqui] [dias]" });
+                    const rentals = getRentals();
+                    const expiry = Date.now() + (days * 24 * 60 * 60 * 1000);
+                    rentals[target] = { expiry, type: command === 'addteste' ? 'teste' : 'aluguel' };
+                    saveRentals(rentals);
+                    return await sock.sendMessage(from, { text: `✅ *SUCESSO!*\n\nO chat *${target}* agora tem acesso por *${days}* dia(s).` });
+                }
+                if (command === 'remaluguel') {
+                    const target = args[0] === 'aqui' ? from : args[0];
+                    if (!target) return await sock.sendMessage(from, { text: "❌ Informe o ID ou use 'aqui'" });
+                    const rentals = getRentals();
+                    delete rentals[target];
+                    saveRentals(rentals);
+                    return await sock.sendMessage(from, { text: `🗑️ *Removido!* O acesso do chat *${target}* foi revogado.` });
+                }
+                if (command === 'id') {
+                    return await sock.sendMessage(from, { text: `🆔 *ID deste chat:* ${from}` });
+                }
+            }
+
             // --- COMANDO ALUGUEL ---
             if (command === 'aluguel' || command === 'alugar') {
                 await react();
