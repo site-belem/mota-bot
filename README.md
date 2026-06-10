@@ -1,11 +1,11 @@
-# 🍎 MOTA BOT - WhatsApp Multi-Device
+# 🍎 MOTA BOT - WhatsApp
 
 <p align="center">
   <img src="assets/mota_bot_banner.png" alt="Mota Bot Banner" width="800">
 </p>
 
 <p align="center">
-  <b>Um bot de WhatsApp potente, rápido e inteligente, inspirado na precisão de Teru Mikami.</b>
+  <b>Um bot de WhatsApp potente, rápido e inteligente, inspirado na precisão de Mikami.</b>
 </p>
 
 ---
@@ -67,5 +67,5 @@ Interessado em alugar o bot ou tirar dúvidas? Entre em contato com o desenvolve
 ---
 
 <p align="center">
-  <i>"Eu criarei um novo mundo..." — Teru Mikami</i>
+  <i>"Eu criarei um novo mundo..." — Mikami</i>
 </p>
