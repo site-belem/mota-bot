@@ -69,21 +69,18 @@ module.exports = (sock) => {
 ⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
 Este bot não está autorizado para este chat.
 
+🎁 *𝐐𝐔𝐄𝐑 𝐓𝐄𝐒𝐓𝐀𝐑?*
+Use o comando: *.teste*
+(Você ganhará 24 horas de acesso grátis!)
+
 💵 *𝐕𝐀𝐋𝐎𝐑𝐄𝐒 𝐌𝐄𝐍𝐒𝐀𝐈𝐒:*
 - 👤 *Privado (PV):* R$ 5,00
 - 👥 *Grupos:* R$ 10,00
 
-⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia
-
-✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
-- IA Inteligente (GPT-4) 24h online.
-- Downloads de vídeos e músicas ilimitados.
-- Comandos de ADM e Diversão.
-
 👤 *𝐃𝐎𝐍𝐎:* Mota
 📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
 
-*Deseja alugar ou pedir um teste?* Mande uma mensagem agora para o dono! 🚀` });
+*Deseja alugar?* Mande uma mensagem agora para o dono! 🚀` });
                 }
                 if (isGroup && !isAuthorized) {
                     return await sock.sendMessage(from, { text: `*𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋*
@@ -91,21 +88,18 @@ Este bot não está autorizado para este chat.
 ⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
 Este bot não está autorizado para este chat.
 
+🎁 *𝐐𝐔𝐄𝐑 𝐓𝐄𝐒𝐓𝐀𝐑?*
+Use o comando: *.teste*
+(Você ganhará 24 horas de acesso grátis!)
+
 💵 *𝐕𝐀𝐋𝐎𝐑𝐄𝐒 𝐌𝐄𝐍𝐒𝐀𝐈𝐒:*
 - 👤 *Privado (PV):* R$ 5,00
 - 👥 *Grupos:* R$ 10,00
 
-⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia
-
-✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
-- IA Inteligente (GPT-4) 24h online.
-- Downloads de vídeos e músicas ilimitados.
-- Comandos de ADM e Diversão.
-
 👤 *𝐃𝐎𝐍𝐎:* Mota
 📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
 
-*Deseja alugar ou pedir um teste?* Mande uma mensagem agora para o dono! 🚀` });
+*Deseja alugar?* Mande uma mensagem agora para o dono! 🚀` });
                 }
             }
 
