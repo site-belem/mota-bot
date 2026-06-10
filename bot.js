@@ -69,7 +69,10 @@ module.exports = (sock) => {
 ⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
 Este bot não está autorizado para este chat.
 
-💵 *𝐕𝐀𝐋𝐎𝐑 𝐌𝐄𝐍𝐒𝐀𝐋:* R$ 10,00
+💵 *𝐕𝐀𝐋𝐎𝐑𝐄𝐒 𝐌𝐄𝐍𝐒𝐀𝐈𝐒:*
+- 👤 *Privado (PV):* R$ 5,00
+- 👥 *Grupos:* R$ 10,00
+
 ⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia
 
 ✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
@@ -88,7 +91,10 @@ Este bot não está autorizado para este chat.
 ⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
 Este bot não está autorizado para este chat.
 
-💵 *𝐕𝐀𝐋𝐎𝐑 𝐌𝐄𝐍𝐒𝐀𝐋:* R$ 10,00
+💵 *𝐕𝐀𝐋𝐎𝐑𝐄𝐒 𝐌𝐄𝐍𝐒𝐀𝐈𝐒:*
+- 👤 *Privado (PV):* R$ 5,00
+- 👥 *Grupos:* R$ 10,00
+
 ⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia
 
 ✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
