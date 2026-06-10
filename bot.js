@@ -3,7 +3,6 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
-const { config, loadConfig, saveConfig } = require('./src/config');
 
 // Banco de dados de aluguel
 const rentalsPath = path.resolve(__dirname, 'database', 'rentals.json');
@@ -12,6 +11,23 @@ const getRentals = () => {
     catch { return {}; }
 };
 const saveRentals = (data) => fs.writeFileSync(rentalsPath, JSON.stringify(data, null, 2));
+
+// Importando módulos internos da pasta src
+const { config, loadConfig, saveConfig } = require('./src/config');
+const { addMetadata } = require('./src/utils');
+const handleWelcome = require('./src/welcome');
+const { ttt_games, handleTTT } = require('./src/games');
+const sendMenu = require('./src/menu');
+
+// Caminhos organizados
+const databasePath = path.join(__dirname, 'database');
+const scriptsPath = path.join(__dirname, 'scripts');
+const assetsPath = path.join(__dirname, 'assets');
+
+// Carregar informações dos comandos da pasta database
+const infoPath = path.join(databasePath, 'commands_info.json');
+let commandsInfo = {};
+try { commandsInfo = JSON.parse(fs.readFileSync(infoPath, "utf-8")); } catch (e) { console.log(e); }
 
 module.exports = (sock) => {
     // Evento de Boas-Vindas
@@ -48,7 +64,7 @@ module.exports = (sock) => {
 
             if (isCommand && !isOwner) {
                 if (!isGroup && !isAuthorized) {
-                    return await sock.sendMessage(from, { text: `🍎 *𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋* 🍎
+                    return await sock.sendMessage(from, { text: `*𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋*
 
 ⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
 Este bot não está autorizado para este chat.
@@ -61,13 +77,13 @@ Este bot não está autorizado para este chat.
 - Downloads de vídeos e músicas ilimitados.
 - Comandos de ADM e Diversão.
 
-👤 *𝐃𝐎𝐍𝐎:* Site-Belém
+👤 *𝐃𝐎𝐍𝐎:* Mota
 📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
 
 *Deseja alugar ou pedir um teste?* Mande uma mensagem agora para o dono! 🚀` });
                 }
                 if (isGroup && !isAuthorized) {
-                    return await sock.sendMessage(from, { text: `🍎 *𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋* 🍎
+                    return await sock.sendMessage(from, { text: `*𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋*
 
 ⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
 Este bot não está autorizado para este chat.
@@ -80,7 +96,7 @@ Este bot não está autorizado para este chat.
 - Downloads de vídeos e músicas ilimitados.
 - Comandos de ADM e Diversão.
 
-👤 *𝐃𝐎𝐍𝐎:* Site-Belém
+👤 *𝐃𝐎𝐍𝐎:* Mota
 📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
 
 *Deseja alugar ou pedir um teste?* Mande uma mensagem agora para o dono! 🚀` });
@@ -146,7 +162,7 @@ Este bot não está autorizado para este chat.
             // --- COMANDO ALUGUEL ---
             if (command === 'aluguel' || command === 'alugar') {
                 await react();
-                const textoAluguel = `🍎 *𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋* 🍎
+                const textoAluguel = `*𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋*
 
 Quer ter o bot mais potente do mercado no seu grupo ou no seu privado? Confira nossos planos:
 
@@ -159,7 +175,7 @@ Quer ter o bot mais potente do mercado no seu grupo ou no seu privado? Confira n
 - Comandos de ADM e Diversão.
 - Suporte garantido do dono.
 
-👤 *𝐃𝐎𝐍𝐎:* Site-Belém
+👤 *𝐃𝐎𝐍𝐎:* Mota
 📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
 
 *Deseja alugar?* Mande uma mensagem agora para o dono e peça seu teste de 1 dia! 🚀`;
