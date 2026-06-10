@@ -72,7 +72,11 @@ module.exports = (sock) => {
             // --- LÓGICA JOGO DA VELHA ---
             if (isGroup && await handleTTT(sock, from, sender, text)) return;
 
-
+            const react = async () => {
+                const emojis = ['🖋️', '🖤'];
+                const selected = emojis[Math.floor(Math.random() * emojis.length)];
+                await sock.sendMessage(from, { react: { text: selected, key: msg.key } });
+            };
             // --- COMANDO ALUGUEL ---
             if (command === 'aluguel' || command === 'alugar') {
                 await react();
@@ -95,11 +99,7 @@ Quer ter o bot mais potente do mercado no seu grupo ou no seu privado? Confira n
 *Deseja alugar?* Mande uma mensagem agora para o dono e peça seu teste de 1 dia! 🚀`;
                 return await sock.sendMessage(from, { text: textoAluguel });
             }
-            const react = async () => {
-                const emojis = ['🖋️', '🖤'];
-                const selected = emojis[Math.floor(Math.random() * emojis.length)];
-                await sock.sendMessage(from, { react: { text: selected, key: msg.key } });
-            };
+
 
             const sendSticker = async (inputBuffer, isVideo = false, isCut = false) => {
                 const tempIn = path.join(__dirname, `stk_in_${Date.now()}${isVideo ? '.mp4' : '.jpg'}`);
