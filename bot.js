@@ -3,6 +3,7 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { config, loadConfig, saveConfig } = require('./src/config');
 
 // Banco de dados de aluguel
 const rentalsPath = path.resolve(__dirname, 'database', 'rentals.json');
