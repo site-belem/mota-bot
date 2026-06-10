@@ -72,6 +72,29 @@ module.exports = (sock) => {
             // --- LÓGICA JOGO DA VELHA ---
             if (isGroup && await handleTTT(sock, from, sender, text)) return;
 
+
+            // --- COMANDO ALUGUEL ---
+            if (command === 'aluguel' || command === 'alugar') {
+                await react();
+                const textoAluguel = `🍎 *𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋* 🍎
+
+Quer ter o bot mais potente do mercado no seu grupo ou no seu privado? Confira nossos planos:
+
+💵 *𝐕𝐀𝐋𝐎𝐑 𝐌𝐄𝐍𝐒𝐀𝐋:* R$ 10,00
+⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia (Experimente tudo!)
+
+✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
+- IA Inteligente (GPT-4) 24h online.
+- Downloads de vídeos e músicas ilimitados.
+- Comandos de ADM e Diversão.
+- Suporte garantido do dono.
+
+👤 *𝐃𝐎𝐍𝐎:* Site-Belém
+📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
+
+*Deseja alugar?* Mande uma mensagem agora para o dono e peça seu teste de 1 dia! 🚀`;
+                return await sock.sendMessage(from, { text: textoAluguel });
+            }
             const react = async () => {
                 const emojis = ['🖋️', '🖤'];
                 const selected = emojis[Math.floor(Math.random() * emojis.length)];
