@@ -1,31 +1,16 @@
 const { downloadContentFromMessage } = require('@whiskeysockets/baileys');
 const { exec } = require('child_process');
 const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
+
+// Banco de dados de aluguel
 const rentalsPath = path.resolve(__dirname, 'database', 'rentals.json');
 const getRentals = () => {
     try { return JSON.parse(fs.readFileSync(rentalsPath, 'utf-8')); }
     catch { return {}; }
 };
 const saveRentals = (data) => fs.writeFileSync(rentalsPath, JSON.stringify(data, null, 2));
-
-const path = require('path');
-const axios = require('axios');
-
-// Importando módulos internos da pasta src
-const { config, loadConfig, saveConfig } = require('./src/config');
-const { addMetadata } = require('./src/utils');
-const handleWelcome = require('./src/welcome');
-const { ttt_games, handleTTT } = require('./src/games');
-const sendMenu = require('./src/menu');
-
-// Caminhos organizados
-const databasePath = path.join(__dirname, 'database');
-const scriptsPath = path.join(__dirname, 'scripts');
-const assetsPath = path.join(__dirname, 'assets');
-
-// Carregar informações dos comandos da pasta database
-const infoPath = path.join(databasePath, 'commands_info.json');
-    try { commandsInfo = JSON.parse(fs.readFileSync(infoPath, "utf-8")); } catch (e) { console.log(e); }
 
 module.exports = (sock) => {
     // Evento de Boas-Vindas
@@ -62,10 +47,42 @@ module.exports = (sock) => {
 
             if (isCommand && !isOwner) {
                 if (!isGroup && !isAuthorized) {
-                    return await sock.sendMessage(from, { text: '❌ *Acesso Negado!*\n\nEste bot só funciona em grupos autorizados ou para usuários com licença ativa no PV.\n\nFale com o dono para alugar: wa.me/559184886473' });
+                    return await sock.sendMessage(from, { text: `🍎 *𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋* 🍎
+
+⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
+Este bot não está autorizado para este chat.
+
+💵 *𝐕𝐀𝐋𝐎𝐑 𝐌𝐄𝐍𝐒𝐀𝐋:* R$ 10,00
+⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia
+
+✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
+- IA Inteligente (GPT-4) 24h online.
+- Downloads de vídeos e músicas ilimitados.
+- Comandos de ADM e Diversão.
+
+👤 *𝐃𝐎𝐍𝐎:* Site-Belém
+📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
+
+*Deseja alugar ou pedir um teste?* Mande uma mensagem agora para o dono! 🚀` });
                 }
                 if (isGroup && !isAuthorized) {
-                    return await sock.sendMessage(from, { text: '⚠️ *GRUPO NÃO AUTORIZADO!*\n\nO período de uso ou teste deste bot neste grupo expirou ou não foi ativado.\n\nEntre em contato com o dono para renovar ou pedir um teste: wa.me/559184886473' });
+                    return await sock.sendMessage(from, { text: `🍎 *𝐌𝐎𝐓𝐀 𝐁𝐎𝐓 - 𝐒𝐈𝐒𝐓𝐄𝐌𝐀 𝐃𝐄 𝐀𝐋𝐔𝐆𝐔𝐄𝐋* 🍎
+
+⚠️ *𝐀𝐂𝐄𝐒𝐒𝐎 𝐍𝐄𝐆𝐀𝐃𝐎!*
+Este bot não está autorizado para este chat.
+
+💵 *𝐕𝐀𝐋𝐎𝐑 𝐌𝐄𝐍𝐒𝐀𝐋:* R$ 10,00
+⏳ *𝐓𝐄𝐒𝐓𝐄 𝐆𝐑Á𝐓𝐈𝐒:* 1 Dia
+
+✅ *𝐕𝐀𝐍𝐓𝐀𝐆𝐄𝐍𝐒:*
+- IA Inteligente (GPT-4) 24h online.
+- Downloads de vídeos e músicas ilimitados.
+- Comandos de ADM e Diversão.
+
+👤 *𝐃𝐎𝐍𝐎:* Site-Belém
+📞 *𝐂𝐎𝐍𝐓𝐀𝐓𝐎:* wa.me/559184886473
+
+*Deseja alugar ou pedir um teste?* Mande uma mensagem agora para o dono! 🚀` });
                 }
             }
 
